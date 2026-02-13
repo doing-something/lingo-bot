@@ -1,7 +1,7 @@
 import os
 import requests
 from bs4 import BeautifulSoup
-import google.generativeai as genai
+from google import genai
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -17,42 +17,86 @@ def fetch_latest_article():
     resp.raise_for_status()
     soup = BeautifulSoup(resp.text, "html.parser")
 
-    post = soup.select_one("article.post")
-    if not post:
-        raise RuntimeError("최신 글을 찾을 수 없습니다.")
+    for li in soup.select("article li"):
+        em = li.select_one("em")
+        if em and "promoted" in em.get_text():
+            continue
+        a = li.select_one("a")
+        if not a:
+            continue
+        title = a.get_text(strip=True)
+        link = a["href"]
+        cite = li.select_one("cite")
+        author = cite.get_text(strip=True) if cite else ""
+        return title, link, author
 
-    title_el = post.select_one("h2 a") or post.select_one("h3 a")
-    title = title_el.get_text(strip=True)
-    link = title_el["href"]
-
-    snippet_el = post.select_one("p") or post.select_one(".entry-summary")
-    snippet = snippet_el.get_text(strip=True) if snippet_el else ""
-
-    return title, link, snippet
+    raise RuntimeError("최신 글을 찾을 수 없습니다.")
 
 
 # ── Gemini 심층 독해 가이드 생성 ───────────────────────────
-def generate_guide(title, link, snippet):
-    genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel("gemini-1.5-pro")
+def generate_guide(title, link, author):
+    client = genai.Client(api_key=GEMINI_API_KEY)
 
-    prompt = f"""당신은 영어 디자인 아티클 독해 튜터입니다.
-아래 아티클 정보를 바탕으로 **한국어**로 5~7문장의 심층 독해 가이드를 작성하세요.
+    prompt = f"""당신은 영어 디자인 아티클 심층 독해 튜터입니다.
+아래 아티클의 원문을 반드시 링크에서 직접 읽고, 다음 형식에 맞춰 한국어로 독해 가이드를 작성하세요.
 
-가이드에는 반드시 다음을 포함하세요:
-1. **핵심 요약** — 글의 주제와 핵심 주장을 1~2문장으로 정리.
-2. **끊어 읽기 포인트** — 긴 문장을 의미 단위로 끊어 읽는 팁 1가지.
-3. **구조 분석** — 글의 논리 흐름(문제 제기→근거→결론 등)을 한 문장으로 설명.
-4. **핵심 표현 5선** — 원문에서 배울 만한 영어 표현 5개와 각각의 뜻·예문.
-5. **영작 퀴즈** — 핵심 표현을 활용한 간단한 한→영 번역 퀴즈 1문제.
+중요: 절대 마크다운 문법(**, *, #, ``` 등)을 사용하지 마세요. 순수 텍스트로만 작성하세요.
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+[핵심 문장 5개 + 한글 해설 보강]
+
+아티클에서 가장 중요한 영어 문장 5개를 골라 각각 아래 형식으로 분석하세요:
+
+n)
+(원문 영어 문장 그대로)
+
+• 끊어 읽기:
+의미 단위마다 줄바꿈으로 끊어서 표기. 슬래시(/) 사용 금지.
+예시:
+The central question is no longer
+whether a system can perform a task,
+but how that performance affects
+human agency and cognition.
+
+• 한글 해설(의미):
+이 문장이 말하고자 하는 바를 자연스러운 한국어로 풀어서 설명.
+핵심 개념에는 영어 원어(한글 뜻) 형태로 병기.
+
+• 구조 해설:
+문장에서 배울 만한 문법·구문 패턴을 bullet으로 정리.
+예) no longer A, but B = 더 이상 A가 아니라 B다
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+[핵심 표현 5선]
+
+원문에서 실전에 쓸 만한 영어 표현 5개를 뽑아 각각:
+• 표현 — 뜻 — 예문(영어+한국어 번역)
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+[영작 퀴즈]
+
+위 핵심 표현 중 하나를 활용한 한→영 번역 퀴즈 1문제.
+• 한국어 문장 제시
+• 힌트: 사용할 표현과 문장 구조 팁
+• 모범 답안 (숨김 표시: 아래에 작성)
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+[추가 질문]
+
+이 글의 내용을 더 깊이 이해하기 위한 생각해볼 질문 2개.
+
+━━━━━━━━━━━━━━━━━━━━━━━━
 
 ---
 제목: {title}
 링크: {link}
-발췌: {snippet}
+저자: {author}
 ---"""
 
-    response = model.generate_content(prompt)
+    response = client.models.generate_content(
+        model="gemini-2.0-flash",
+        contents=prompt,
+    )
     return response.text
 
 
@@ -62,7 +106,6 @@ def send_telegram(message):
     payload = {
         "chat_id": TELEGRAM_CHAT_ID,
         "text": message,
-        "parse_mode": "Markdown",
     }
     resp = requests.post(url, json=payload, timeout=30)
     resp.raise_for_status()
@@ -70,12 +113,12 @@ def send_telegram(message):
 
 # ── 실행 ───────────────────────────────────────────────────
 def main():
-    title, link, snippet = fetch_latest_article()
-    guide = generate_guide(title, link, snippet)
+    title, link, author = fetch_latest_article()
+    guide = generate_guide(title, link, author)
 
     msg = (
-        f"*📖 오늘의 디자인 아티클 독해*\n\n"
-        f"*{title}*\n{link}\n\n"
+        f"📖 오늘의 디자인 아티클 독해\n\n"
+        f"{title}\n{link}\n\n"
         f"{guide}"
     )
     send_telegram(msg)
