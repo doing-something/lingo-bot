@@ -33,12 +33,26 @@ def fetch_latest_article():
     raise RuntimeError("최신 글을 찾을 수 없습니다.")
 
 
+# ── 아티클 본문 크롤링 ────────────────────────────────────
+def fetch_article_body(link, max_chars=10000):
+    resp = requests.get(link, timeout=30)
+    resp.raise_for_status()
+    soup = BeautifulSoup(resp.text, "html.parser")
+
+    for tag in soup.select("script, style, nav, header, footer"):
+        tag.decompose()
+
+    article = soup.select_one("article") or soup.select_one("main") or soup.body
+    text = article.get_text(separator="\n", strip=True) if article else ""
+    return text[:max_chars]
+
+
 # ── Gemini 심층 독해 가이드 생성 ───────────────────────────
-def generate_guide(title, link, author):
+def generate_guide(title, link, author, body):
     client = genai.Client(api_key=GEMINI_API_KEY)
 
     prompt = f"""당신은 영어 디자인 아티클 심층 독해 튜터입니다.
-아래 아티클의 원문을 반드시 링크에서 직접 읽고, 다음 형식에 맞춰 한국어로 독해 가이드를 작성하세요.
+아래 아티클 본문을 읽고, 다음 형식에 맞춰 한국어로 독해 가이드를 작성하세요.
 
 중요: 절대 마크다운 문법(**, *, #, ``` 등)을 사용하지 마세요. 순수 텍스트로만 작성하세요.
 
@@ -91,6 +105,9 @@ human agency and cognition.
 제목: {title}
 링크: {link}
 저자: {author}
+
+본문:
+{body}
 ---"""
 
     response = client.models.generate_content(
@@ -114,7 +131,8 @@ def send_telegram(message):
 # ── 실행 ───────────────────────────────────────────────────
 def main():
     title, link, author = fetch_latest_article()
-    guide = generate_guide(title, link, author)
+    body = fetch_article_body(link)
+    guide = generate_guide(title, link, author, body)
 
     msg = (
         f"📖 오늘의 디자인 아티클 독해\n\n"
