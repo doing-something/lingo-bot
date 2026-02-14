@@ -12,8 +12,15 @@ TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
 TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 
 # ── HeyDesigner 최신 글 크롤링 ─────────────────────────────
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+}
+
+
 def fetch_latest_article():
-    resp = requests.get("https://heydesigner.com/", timeout=30)
+    resp = requests.get("https://heydesigner.com/", timeout=30, headers=HEADERS)
     resp.raise_for_status()
     soup = BeautifulSoup(resp.text, "html.parser")
 
@@ -35,7 +42,7 @@ def fetch_latest_article():
 
 # ── 아티클 본문 크롤링 ────────────────────────────────────
 def fetch_article_body(link, max_chars=10000):
-    resp = requests.get(link, timeout=30)
+    resp = requests.get(link, timeout=30, headers=HEADERS)
     resp.raise_for_status()
     soup = BeautifulSoup(resp.text, "html.parser")
 
