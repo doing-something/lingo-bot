@@ -78,6 +78,12 @@ ln -s /absolute/path/to/.env worker/.dev.vars
 cd worker && npm run dev
 ```
 
+### 배포 + git push
+```bash
+# 프로젝트 루트에서 실행. 배포 성공 시에만 git push
+./deploy.sh
+```
+
 ### 프롬프트 평가
 ```bash
 cd worker
