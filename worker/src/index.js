@@ -1,5 +1,7 @@
 const MAX_TURNS = 20;
 const HISTORY_TTL = 60 * 60 * 24; // 24시간
+const TELEGRAM_MAX_LEN = 4096;
+const TELEGRAM_SAFE_LEN = 3900;
 
 const SYSTEM_PROMPT = `당신은 한국인 영어 학습자를 위한 영어 독해/영작 튜터입니다.
 
@@ -137,15 +139,64 @@ async function callGemini(apiKey, history) {
 
 async function sendTelegram(token, chatId, text) {
   const url = `https://api.telegram.org/bot${token}/sendMessage`;
+  const chunks = splitTelegramMessage(text, TELEGRAM_SAFE_LEN);
+  const total = chunks.length;
 
-  const resp = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: chatId, text }),
-  });
+  for (let i = 0; i < total; i += 1) {
+    const prefix = total > 1 ? `(${i + 1}/${total})\n` : "";
+    const chunkText = `${prefix}${chunks[i]}`.slice(0, TELEGRAM_MAX_LEN);
+    const resp = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, text: chunkText }),
+    });
 
-  if (!resp.ok) {
-    const err = await resp.text();
-    console.error("Telegram API error:", err);
+    if (!resp.ok) {
+      const err = await resp.text();
+      console.error(`Telegram API error (chunk ${i + 1}/${total}):`, err);
+      break;
+    }
   }
+}
+
+function splitTelegramMessage(text, maxLen) {
+  const source = String(text ?? "");
+  if (source.length <= maxLen) {
+    return [source];
+  }
+
+  const chunks = [];
+  let cursor = 0;
+
+  while (cursor < source.length) {
+    const hardEnd = Math.min(cursor + maxLen, source.length);
+    if (hardEnd === source.length) {
+      chunks.push(source.slice(cursor));
+      break;
+    }
+
+    const window = source.slice(cursor, hardEnd);
+    const minBreakPos = Math.floor(maxLen * 0.4);
+    const candidates = [
+      window.lastIndexOf("\n\n"),
+      window.lastIndexOf("\n"),
+      window.lastIndexOf(" "),
+    ];
+
+    let breakPos = -1;
+    for (const pos of candidates) {
+      if (pos >= minBreakPos) {
+        breakPos = Math.max(breakPos, pos);
+      }
+    }
+
+    const end = breakPos >= 0 ? cursor + breakPos + 1 : hardEnd;
+    const chunk = source.slice(cursor, end).trim();
+    if (chunk) {
+      chunks.push(chunk);
+    }
+    cursor = end;
+  }
+
+  return chunks.length > 0 ? chunks : [source.slice(0, maxLen)];
 }
