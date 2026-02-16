@@ -9,7 +9,7 @@ export const TELEGRAM_SAFE_LEN = 3900;
 export const MAX_HTML_SIZE = 512 * 1024; // 512KB
 export const MAX_TEXT_LEN = 10000;
 
-export function feedbackKeyboard(traceId) {
+export function feedbackKeyboard(traceId: string) {
   return {
     inline_keyboard: [[
       { text: "\uD83D\uDC4D \uB3C4\uC6C0\uB410\uC5B4\uC694", callback_data: `good:${traceId}` },
