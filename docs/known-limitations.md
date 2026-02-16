@@ -11,3 +11,7 @@
 
 - **프롬프트 fetch가 critical path에 있음**: KV 캐시 미스 시(5분마다) Langfuse API 왕복이 사용자 응답을 지연시킴. 사용자가 늘면 TTL 증가 또는 stale-while-revalidate 패턴 고려.
 - **KV 캐시 즉시 무효화 불가**: Langfuse UI에서 프롬프트를 바꿔도 최대 5분간 이전 버전 사용. 긴급 시 `wrangler kv key delete`로 `prompt:system-prompt` 키 수동 삭제.
+
+## promptfoo
+
+- **grading provider 명시 필요**: promptfoo의 `google:gemini-2.0-flash` provider로 `llm-rubric` assertion을 사용할 때, `defaultTest.options.provider`를 명시하지 않으면 내부적으로 `AIStudioGenericProvider`가 grading에 사용되면서 "Not implemented" 에러 발생. `promptfooconfig.yaml`의 `defaultTest.options.provider: google:gemini-2.0-flash`로 우회 중.
