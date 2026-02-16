@@ -160,9 +160,6 @@ async function fetchArticle(url) {
   });
   if (!resp.ok) return null;
 
-  const contentLength = resp.headers.get("content-length");
-  if (contentLength && parseInt(contentLength) > MAX_HTML_SIZE) return null;
-
   const html = (await resp.text()).slice(0, MAX_HTML_SIZE);
   let text = html
     .replace(/<script[\s\S]*?<\/script>/gi, "")
