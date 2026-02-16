@@ -191,6 +191,16 @@ function isUrl(text) {
   return /^https?:\/\/\S+$/.test(text.trim());
 }
 
+function extractMainContent(html) {
+  const articleMatch = html.match(/<article[\s>][\s\S]*<\/article>/i);
+  if (articleMatch) return articleMatch[0];
+
+  const mainMatch = html.match(/<main[\s>][\s\S]*<\/main>/i);
+  if (mainMatch) return mainMatch[0];
+
+  return html;
+}
+
 async function fetchArticle(url) {
   const resp = await fetch(url, {
     headers: { "User-Agent": "Mozilla/5.0 (compatible; LingoBot/1.0)" },
@@ -198,7 +208,8 @@ async function fetchArticle(url) {
   });
   if (!resp.ok) return null;
 
-  const html = await readLimited(resp.body, MAX_HTML_SIZE);
+  const rawHtml = await readLimited(resp.body, MAX_HTML_SIZE);
+  const html = extractMainContent(rawHtml);
   let text = html
     .replace(/<script[\s\S]*?<\/script>/gi, "")
     .replace(/<style[\s\S]*?<\/style>/gi, "")
@@ -212,6 +223,8 @@ async function fetchArticle(url) {
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(parseInt(dec)))
     .replace(/\s+/g, " ")
     .trim();
 
