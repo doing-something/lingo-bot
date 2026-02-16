@@ -103,18 +103,19 @@ export default {
     }
 
     let textForAI = userText;
-    const wasTruncated = userText.length > MAX_TEXT_LEN;
-    if (wasTruncated) {
-      textForAI = truncateText(userText, MAX_TEXT_LEN);
-    }
+    let wasTruncated = false;
 
     if (isUrl(userText)) {
-      const article = await fetchArticle(userText.trim());
-      if (!article) {
+      const result = await fetchArticle(userText.trim());
+      if (!result) {
         await sendTelegram(env.TELEGRAM_TOKEN, chatId, "URL에서 글을 가져올 수 없습니다.");
         return new Response("OK", { status: 200 });
       }
-      textForAI = article;
+      textForAI = result.text;
+      wasTruncated = result.truncated;
+    } else if (userText.length > MAX_TEXT_LEN) {
+      textForAI = truncateText(userText, MAX_TEXT_LEN);
+      wasTruncated = true;
     }
 
     const history = await loadHistory(env.CHAT_HISTORY, chatId);
@@ -244,9 +245,12 @@ async function fetchArticle(url) {
     .replace(/\s+/g, " ")
     .trim();
 
-  text = truncateText(text, MAX_TEXT_LEN);
+  const truncated = text.length > MAX_TEXT_LEN;
+  if (truncated) {
+    text = truncateText(text, MAX_TEXT_LEN);
+  }
 
-  return text || null;
+  return text ? { text, truncated } : null;
 }
 
 async function sendTelegram(token, chatId, text) {
