@@ -150,6 +150,10 @@ async function callGemini(apiKey, history) {
   const body = {
     systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
     contents: history,
+    generationConfig: {
+      temperature: 0.4,
+      maxOutputTokens: 4096,
+    },
   };
 
   const resp = await fetch(url, {
@@ -165,7 +169,15 @@ async function callGemini(apiKey, history) {
   }
 
   const data = await resp.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "응답을 생성할 수 없습니다.";
+  const candidate = data.candidates?.[0];
+  if (!candidate) {
+    console.error("Gemini: no candidates", JSON.stringify(data));
+    return "응답을 생성할 수 없습니다.";
+  }
+  if (candidate.finishReason === "SAFETY") {
+    return "안전 필터에 의해 응답이 차단되었습니다. 다른 텍스트로 시도해주세요.";
+  }
+  return candidate.content?.parts?.[0]?.text ?? "응답을 생성할 수 없습니다.";
 }
 
 async function readLimited(stream, maxBytes) {
