@@ -164,7 +164,13 @@ async function callGemini(apiKey, history) {
 
   if (!resp.ok) {
     const err = await resp.text();
-    console.error("Gemini API error:", err);
+    console.error(`Gemini API error (${resp.status}):`, err);
+    if (resp.status === 429) {
+      return "요청이 너무 많습니다. 잠시 후 다시 시도해주세요.";
+    }
+    if (resp.status === 400) {
+      return "텍스트가 너무 길거나 처리할 수 없는 내용입니다. 더 짧은 텍스트로 시도해주세요.";
+    }
     return "AI 응답 생성에 실패했습니다. 잠시 후 다시 시도해주세요.";
   }
 
