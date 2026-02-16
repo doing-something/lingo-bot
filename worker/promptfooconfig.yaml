@@ -1,0 +1,72 @@
+prompts:
+  - "{{message}}"
+
+providers:
+  - id: google:gemini-2.0-flash
+    config:
+      systemInstruction: file://prompts/system-prompt.txt
+
+defaultTest:
+  options:
+    provider: google:gemini-2.0-flash
+  assert:
+    - type: not-icontains
+      value: "**"
+    - type: not-icontains
+      value: "##"
+    - type: javascript
+      value: "!output.includes('```')"
+
+tests:
+  - vars:
+      message: "The quick brown fox jumps over the lazy dog."
+    assert:
+      - type: icontains
+        value: "핵심 문장"
+      - type: icontains
+        value: "끊어 읽기"
+      - type: llm-rubric
+        value: "응답이 한국어로 된 영어 독해 가이드이며, 끊어 읽기와 한글 해설이 포함되어 있다."
+
+  - vars:
+      message: >
+        Resilience is not about bouncing back to where you were before.
+        It is about growing through adversity and emerging stronger
+        on the other side. Those who cultivate resilience learn to
+        see challenges not as threats but as opportunities for growth.
+    assert:
+      - type: icontains
+        value: "핵심 표현"
+      - type: icontains
+        value: "구조 해설"
+      - type: llm-rubric
+        value: "여러 문장으로 된 영문 단락에 대해 핵심 문장을 선별하고, 각각 끊어 읽기/해설/구조 분석을 제공한다."
+
+  - vars:
+      message: "이 문장에서 'bouncing back'이 무슨 뜻인가요?"
+    assert:
+      - type: llm-rubric
+        value: "한국어 질문에 대해 한국어로 답변하며, 영어 표현의 의미를 설명한다."
+
+  - vars:
+      message: >
+        Kubernetes orchestrates containerized applications across
+        a cluster of machines, providing mechanisms for deployment,
+        maintenance, and scaling of applications.
+    assert:
+      - type: icontains
+        value: "핵심 문장"
+      - type: icontains
+        value: "핵심 표현"
+      - type: llm-rubric
+        value: "기술 영문에 대해 전문 용어를 한국어로 적절히 설명하는 독해 가이드를 제공한다."
+
+  - vars:
+      message: "To be or not to be, that is the question."
+    assert:
+      - type: icontains
+        value: "끊어 읽기"
+      - type: icontains
+        value: "한글 해설"
+      - type: llm-rubric
+        value: "짧은 명언에 대해서도 독해 가이드 형식을 따르며, 문법/구문 패턴을 분석한다."
