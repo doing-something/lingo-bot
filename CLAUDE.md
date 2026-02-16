@@ -12,7 +12,8 @@
 - `worker/src/index.js`의 Gemini 모델: `gemini-2.0-flash`
 
 ## 빌드/실행
-- Python: `pip install -r requirements.txt && python main.py`
+- Python: `uv run python main.py`
+- 테스트: `uv run pytest test_main.py -v`
 - Worker 로컬: `cd worker && npm install && npm run dev`
 - Worker 배포: `cd worker && npm run deploy`
 
