@@ -5,6 +5,12 @@ const HISTORY_TTL = 60 * 60 * 24 * 7; // 7일
 const TELEGRAM_MAX_LEN = 4096;
 const TELEGRAM_SAFE_LEN = 3900;
 const MAX_HTML_SIZE = 512 * 1024; // 512KB
+const FEEDBACK_KEYBOARD = {
+  inline_keyboard: [[
+    { text: "\uD83D\uDC4D \uB3C4\uC6C0\uB410\uC5B4\uC694", callback_data: "good" },
+    { text: "\uD83D\uDC4E \uC544\uC26C\uC6CC\uC694", callback_data: "bad" },
+  ]],
+};
 const MAX_TEXT_LEN = 10000;
 
 const SYSTEM_PROMPT = `당신은 한국인 영어 학습자를 위한 영어 독해 튜터입니다.
@@ -123,7 +129,7 @@ export default {
     if (wasTruncated) {
       await sendTelegram(env.TELEGRAM_TOKEN, chatId, "(텍스트가 길어 앞부분만 분석합니다)");
     }
-    await sendTelegram(env.TELEGRAM_TOKEN, chatId, geminiResult.text);
+    await sendTelegram(env.TELEGRAM_TOKEN, chatId, geminiResult.text, FEEDBACK_KEYBOARD);
 
     const traceId = crypto.randomUUID();
     await env.CHAT_HISTORY.put(`score:${chatId}`, traceId, { expirationTtl: HISTORY_TTL });
@@ -288,7 +294,7 @@ async function fetchArticle(url) {
   return text ? { text, truncated } : null;
 }
 
-async function sendTelegram(token, chatId, text) {
+async function sendTelegram(token, chatId, text, replyMarkup) {
   const url = `https://api.telegram.org/bot${token}/sendMessage`;
   const chunks = splitTelegramMessage(text, TELEGRAM_SAFE_LEN);
   const total = chunks.length;
@@ -296,10 +302,15 @@ async function sendTelegram(token, chatId, text) {
   for (let i = 0; i < total; i += 1) {
     const prefix = total > 1 ? `(${i + 1}/${total})\n` : "";
     const chunkText = `${prefix}${chunks[i]}`.slice(0, TELEGRAM_MAX_LEN);
+    const isLast = i === total - 1;
+    const body = { chat_id: chatId, text: chunkText };
+    if (isLast && replyMarkup) {
+      body.reply_markup = replyMarkup;
+    }
     const resp = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: chatId, text: chunkText }),
+      body: JSON.stringify(body),
     });
 
     if (!resp.ok) {
