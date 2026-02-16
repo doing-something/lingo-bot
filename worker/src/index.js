@@ -125,9 +125,12 @@ export default {
     }
     await sendTelegram(env.TELEGRAM_TOKEN, chatId, geminiResult.text);
 
+    const traceId = crypto.randomUUID();
+    await env.CHAT_HISTORY.put(`score:${chatId}`, traceId, { expirationTtl: HISTORY_TTL });
+
     if (env.LANGFUSE_PUBLIC_KEY && env.LANGFUSE_SECRET_KEY) {
       const payload = buildIngestionPayload({
-        traceId: crypto.randomUUID(),
+        traceId,
         generationId: crypto.randomUUID(),
         chatId,
         input: textForAI,
