@@ -27,6 +27,7 @@ lingo/
 |---|---|---|
 | `GEMINI_API_KEY` | Google Gemini API | [Google AI Studio](https://aistudio.google.com/apikey)에서 발급 |
 | `TELEGRAM_TOKEN` | 텔레그램 봇 토큰 | [@BotFather](https://t.me/BotFather)에서 봇 생성 후 발급 |
+| `TELEGRAM_WEBHOOK_SECRET` | Telegram Webhook 검증 토큰 | 임의의 긴 랜덤 문자열 생성 후 사용 |
 
 ### 배포
 ```bash
@@ -40,12 +41,13 @@ npx wrangler kv namespace create CHAT_HISTORY
 # 시크릿 등록
 echo $GEMINI_API_KEY | npx wrangler secret put GEMINI_API_KEY
 echo $TELEGRAM_TOKEN | npx wrangler secret put TELEGRAM_TOKEN
+echo $TELEGRAM_WEBHOOK_SECRET | npx wrangler secret put TELEGRAM_WEBHOOK_SECRET
 
 # 배포
 npm run deploy
 
 # Webhook 등록 (WORKER_URL은 배포 후 출력되는 URL)
-curl "https://api.telegram.org/bot{TOKEN}/setWebhook?url={WORKER_URL}"
+curl "https://api.telegram.org/bot{TOKEN}/setWebhook?url={WORKER_URL}&secret_token={TELEGRAM_WEBHOOK_SECRET}"
 ```
 
 ### 로컬 개발
