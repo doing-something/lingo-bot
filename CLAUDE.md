@@ -14,6 +14,7 @@
 ## 빌드/실행
 - Worker 로컬: `cd worker && npm install && npm run dev`
 - Worker 배포: `cd worker && npm run deploy`
+- 프롬프트 평가: `cd worker && npm run eval` (결과 확인: `npm run eval:view`)
 
 ## 환경 변수
 - `GEMINI_API_KEY`, `TELEGRAM_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`
@@ -24,4 +25,7 @@
 
 ## 파일 구조
 - `worker/src/index.js` — Webhook 수신 + KV 대화 기록 + Gemini 멀티턴 호출 + 텔레그램 답장
+- `worker/src/constants.js` — 시스템 프롬프트(폴백), 상수
+- `worker/prompts/system-prompt.txt` — 시스템 프롬프트 원본 (promptfoo 평가 대상)
+- `worker/promptfooconfig.yaml` — promptfoo 평가 설정 + 테스트 케이스
 - `worker/wrangler.toml` — Worker 설정 + KV 바인딩
