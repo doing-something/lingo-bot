@@ -149,6 +149,34 @@ async function callGemini(apiKey, history) {
   return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "응답을 생성할 수 없습니다.";
 }
 
+async function readLimited(stream, maxBytes) {
+  const reader = stream.getReader();
+  const chunks = [];
+  let total = 0;
+
+  while (total < maxBytes) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    const remaining = maxBytes - total;
+    chunks.push(remaining < value.length ? value.slice(0, remaining) : value);
+    total += value.length;
+  }
+
+  reader.releaseLock();
+  return new TextDecoder().decode(concatUint8(chunks));
+}
+
+function concatUint8(arrays) {
+  const len = arrays.reduce((sum, a) => sum + a.length, 0);
+  const result = new Uint8Array(len);
+  let offset = 0;
+  for (const a of arrays) {
+    result.set(a, offset);
+    offset += a.length;
+  }
+  return result;
+}
+
 function isUrl(text) {
   return /^https?:\/\/\S+$/.test(text.trim());
 }
@@ -160,7 +188,7 @@ async function fetchArticle(url) {
   });
   if (!resp.ok) return null;
 
-  const html = (await resp.text()).slice(0, MAX_HTML_SIZE);
+  const html = await readLimited(resp.body, MAX_HTML_SIZE);
   let text = html
     .replace(/<script[\s\S]*?<\/script>/gi, "")
     .replace(/<style[\s\S]*?<\/style>/gi, "")
