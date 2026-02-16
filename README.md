@@ -34,6 +34,7 @@ lingo/
 | `GEMINI_API_KEY` | Google Gemini API | [Google AI Studio](https://aistudio.google.com/apikey)에서 발급 |
 | `TELEGRAM_TOKEN` | 텔레그램 봇 토큰 | [@BotFather](https://t.me/BotFather)에서 봇 생성 후 발급 |
 | `TELEGRAM_CHAT_ID` | 텔레그램 채팅 ID (일방향 전송용) | [@userinfobot](https://t.me/userinfobot)에게 메시지 보내면 확인 |
+| `ARTICLE_FEED_URL` | 아티클 RSS/Atom 피드 URL | 예: `https://heydesigner.com/feed/` |
 
 ### 아티클 소스 변경
 `ARTICLE_FEED_URL`은 필수 환경 변수다. 값이 없으면 실행 시 에러가 발생한다:
@@ -43,7 +44,7 @@ ARTICLE_FEED_URL=https://example.com/feed/
 RSS/Atom 피드를 제공하는 사이트라면 어디든 사용 가능하다.
 
 ### 독해 가이드 (GitHub Actions)
-1. GitHub 리포지토리 Settings → Secrets에 위 3개 키 등록
+1. GitHub 리포지토리 Settings → Secrets에 위 4개 키 등록
 2. 매일 KST 08:00 자동 실행, Actions 탭에서 수동 실행도 가능
 
 실행 시각을 변경하려면 `.github/workflows/daily_tutor.yml`의 cron 표현식을 수정한다:
