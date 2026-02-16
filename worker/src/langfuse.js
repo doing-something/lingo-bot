@@ -60,6 +60,33 @@ export function buildIngestionPayload({ traceId, generationId, chatId, input, ou
 }
 
 /**
+ * Langfuse score-create payload를 조립한다.
+ *
+ * @param {Object} params
+ * @param {string} params.traceId - 점수를 매길 Trace 식별자
+ * @param {number} params.score - 점수 (1: good, 0: bad)
+ * @returns {{ batch: Array }} Langfuse ingestion payload
+ */
+export function buildScorePayload({ traceId, score }) {
+  return {
+    batch: [
+      {
+        id: crypto.randomUUID(),
+        timestamp: new Date().toISOString(),
+        type: "score-create",
+        body: {
+          id: crypto.randomUUID(),
+          traceId,
+          name: "user-feedback",
+          value: score,
+          dataType: "NUMERIC",
+        },
+      },
+    ],
+  };
+}
+
+/**
  * Langfuse ingestion API에 payload를 전송한다.
  * Basic Auth (LANGFUSE_PUBLIC_KEY:LANGFUSE_SECRET_KEY) 사용.
  * 전송 실패 시 console.error만 남기고 예외를 던지지 않는다.
