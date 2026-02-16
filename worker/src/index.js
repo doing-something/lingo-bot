@@ -102,7 +102,8 @@ export default {
       return new Response("OK", { status: 200 });
     }
 
-    let textForAI = userText;
+    let textForAI = truncateText(userText, MAX_TEXT_LEN);
+
     if (isUrl(userText)) {
       const article = await fetchArticle(userText.trim());
       if (!article) {
@@ -191,11 +192,19 @@ function isUrl(text) {
   return /^https?:\/\/\S+$/.test(text.trim());
 }
 
+function truncateText(text, maxLen) {
+  if (text.length <= maxLen) return text;
+  const cut = text.lastIndexOf(".", maxLen);
+  if (cut > maxLen * 0.5) return text.slice(0, cut + 1);
+  const spaceCut = text.lastIndexOf(" ", maxLen);
+  return spaceCut > 0 ? text.slice(0, spaceCut) : text.slice(0, maxLen);
+}
+
 function extractMainContent(html) {
-  const articleMatch = html.match(/<article[\s>][\s\S]*<\/article>/i);
+  const articleMatch = html.match(/<article[\s>][\s\S]*?<\/article>/i);
   if (articleMatch) return articleMatch[0];
 
-  const mainMatch = html.match(/<main[\s>][\s\S]*<\/main>/i);
+  const mainMatch = html.match(/<main[\s>][\s\S]*?<\/main>/i);
   if (mainMatch) return mainMatch[0];
 
   return html;
@@ -223,20 +232,12 @@ async function fetchArticle(url) {
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
-    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
-    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(parseInt(dec)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(parseInt(dec)))
     .replace(/\s+/g, " ")
     .trim();
 
-  if (text.length > MAX_TEXT_LEN) {
-    const cut = text.lastIndexOf(".", MAX_TEXT_LEN);
-    if (cut > MAX_TEXT_LEN * 0.5) {
-      text = text.slice(0, cut + 1);
-    } else {
-      const spaceCut = text.lastIndexOf(" ", MAX_TEXT_LEN);
-      text = spaceCut > 0 ? text.slice(0, spaceCut) : text.slice(0, MAX_TEXT_LEN);
-    }
-  }
+  text = truncateText(text, MAX_TEXT_LEN);
 
   return text || null;
 }
