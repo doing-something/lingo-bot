@@ -119,6 +119,8 @@ export default {
         usage: geminiResult.usage,
         startTime,
         endTime,
+        promptName: promptVersion ? "system-prompt" : undefined,
+        promptVersion,
       });
       ctx.waitUntil(sendToLangfuse(env, payload));
     }

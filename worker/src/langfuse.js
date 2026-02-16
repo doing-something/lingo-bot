@@ -15,9 +15,11 @@
  * @param {number} params.usage.totalTokenCount
  * @param {string} params.startTime - Gemini 호출 시작 시각 (ISO 8601)
  * @param {string} params.endTime - Gemini 호출 종료 시각 (ISO 8601)
+ * @param {string} [params.promptName] - Langfuse 프롬프트 이름
+ * @param {number} [params.promptVersion] - Langfuse 프롬프트 버전
  * @returns {{ batch: Array }} Langfuse ingestion payload
  */
-export function buildIngestionPayload({ traceId, generationId, chatId, input, output, model, usage, startTime, endTime }) {
+export function buildIngestionPayload({ traceId, generationId, chatId, input, output, model, usage, startTime, endTime, promptName, promptVersion }) {
   return {
     batch: [
       {
@@ -53,6 +55,8 @@ export function buildIngestionPayload({ traceId, generationId, chatId, input, ou
                 total: usage.totalTokenCount,
               }
             : undefined,
+          promptName,
+          promptVersion,
         },
       },
     ],
