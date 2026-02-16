@@ -5,12 +5,14 @@ const HISTORY_TTL = 60 * 60 * 24 * 7; // 7일
 const TELEGRAM_MAX_LEN = 4096;
 const TELEGRAM_SAFE_LEN = 3900;
 const MAX_HTML_SIZE = 512 * 1024; // 512KB
-const FEEDBACK_KEYBOARD = {
-  inline_keyboard: [[
-    { text: "\uD83D\uDC4D \uB3C4\uC6C0\uB410\uC5B4\uC694", callback_data: "good" },
-    { text: "\uD83D\uDC4E \uC544\uC26C\uC6CC\uC694", callback_data: "bad" },
-  ]],
-};
+function feedbackKeyboard(traceId) {
+  return {
+    inline_keyboard: [[
+      { text: "\uD83D\uDC4D \uB3C4\uC6C0\uB410\uC5B4\uC694", callback_data: `good:${traceId}` },
+      { text: "\uD83D\uDC4E \uC544\uC26C\uC6CC\uC694", callback_data: `bad:${traceId}` },
+    ]],
+  };
+}
 const MAX_TEXT_LEN = 10000;
 
 const SYSTEM_PROMPT = `당신은 한국인 영어 학습자를 위한 영어 독해 튜터입니다.
@@ -78,15 +80,19 @@ export default {
     if (update.callback_query) {
       const cb = update.callback_query;
       const cbChatId = String(cb.message.chat.id);
-      const traceId = await env.CHAT_HISTORY.get(`score:${cbChatId}`);
+      const [action, traceId] = cb.data.split(":", 2);
 
       if (traceId && env.LANGFUSE_PUBLIC_KEY && env.LANGFUSE_SECRET_KEY) {
-        const score = cb.data === "good" ? 1 : 0;
+        const score = action === "good" ? 1 : 0;
         const payload = buildScorePayload({ traceId, score });
         ctx.waitUntil(sendToLangfuse(env, payload));
       }
 
-      await answerCallbackQuery(env.TELEGRAM_TOKEN, cb.id, cb.data === "good" ? "감사합니다!" : "피드백 감사합니다!");
+      const feedbackText = action === "good" ? "감사합니다!" : "피드백 감사합니다!";
+      await Promise.all([
+        answerCallbackQuery(env.TELEGRAM_TOKEN, cb.id, feedbackText),
+        removeReplyMarkup(env.TELEGRAM_TOKEN, cbChatId, cb.message.message_id),
+      ]);
       return new Response("OK", { status: 200 });
     }
 
@@ -142,13 +148,8 @@ export default {
     history.push({ role: "model", parts: [{ text: geminiResult.text }] });
 
     await saveHistory(env.CHAT_HISTORY, chatId, history);
-    if (wasTruncated) {
-      await sendTelegram(env.TELEGRAM_TOKEN, chatId, "(텍스트가 길어 앞부분만 분석합니다)");
-    }
-    await sendTelegram(env.TELEGRAM_TOKEN, chatId, geminiResult.text, FEEDBACK_KEYBOARD);
 
     const traceId = crypto.randomUUID();
-    await env.CHAT_HISTORY.put(`score:${chatId}`, traceId, { expirationTtl: HISTORY_TTL });
 
     if (env.LANGFUSE_PUBLIC_KEY && env.LANGFUSE_SECRET_KEY) {
       const payload = buildIngestionPayload({
@@ -163,6 +164,11 @@ export default {
       });
       ctx.waitUntil(sendToLangfuse(env, payload));
     }
+
+    if (wasTruncated) {
+      await sendTelegram(env.TELEGRAM_TOKEN, chatId, "(텍스트가 길어 앞부분만 분석합니다)");
+    }
+    await sendTelegram(env.TELEGRAM_TOKEN, chatId, geminiResult.text, feedbackKeyboard(traceId));
 
     return new Response("OK", { status: 200 });
   },
@@ -311,11 +317,25 @@ async function fetchArticle(url) {
 }
 
 async function answerCallbackQuery(token, callbackQueryId, text) {
-  await fetch(`https://api.telegram.org/bot${token}/answerCallbackQuery`, {
+  const resp = await fetch(`https://api.telegram.org/bot${token}/answerCallbackQuery`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ callback_query_id: callbackQueryId, text }),
   });
+  if (!resp.ok) {
+    console.error(`answerCallbackQuery error (${resp.status}):`, await resp.text());
+  }
+}
+
+async function removeReplyMarkup(token, chatId, messageId) {
+  const resp = await fetch(`https://api.telegram.org/bot${token}/editMessageReplyMarkup`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: chatId, message_id: messageId, reply_markup: { inline_keyboard: [] } }),
+  });
+  if (!resp.ok) {
+    console.error(`removeReplyMarkup error (${resp.status}):`, await resp.text());
+  }
 }
 
 async function sendTelegram(token, chatId, text, replyMarkup) {
