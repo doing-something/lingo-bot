@@ -33,9 +33,9 @@ lingo/
 cd worker
 npm install
 
-# KV namespace 생성
+# KV namespace 생성 후 wrangler.toml의 id를 자신의 값으로 교체
 npx wrangler kv namespace create CHAT_HISTORY
-# 출력된 id를 wrangler.toml에 입력
+# 출력된 id를 wrangler.toml의 [[kv_namespaces]] id에 입력
 
 # 시크릿 등록
 echo $GEMINI_API_KEY | npx wrangler secret put GEMINI_API_KEY
