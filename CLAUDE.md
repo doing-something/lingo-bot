@@ -15,6 +15,7 @@
 ## 빌드/실행
 - Worker 로컬: `cd worker && npm install && npm run dev`
 - Worker 배포: `cd worker && npm run deploy`
+- 배포 + push: `./deploy.sh` (배포 성공 시에만 git push)
 - 프롬프트 평가: `cd worker && npm run eval` (결과 확인: `npm run eval:view`)
 
 ## 환경 변수
