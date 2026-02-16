@@ -1,4 +1,4 @@
-import { buildIngestionPayload, buildScorePayload, sendToLangfuse } from "./langfuse.js";
+import { buildIngestionPayload, buildScorePayload, sendToLangfuse, fetchPrompt } from "./langfuse.js";
 import { MAX_TURNS, HISTORY_TTL, TELEGRAM_MAX_LEN, TELEGRAM_SAFE_LEN, MAX_HTML_SIZE, MAX_TEXT_LEN, SYSTEM_PROMPT, feedbackKeyboard } from "./constants.js";
 
 export default {
@@ -82,11 +82,21 @@ export default {
       wasTruncated = true;
     }
 
+    let promptVersion = null;
+    let systemPrompt = SYSTEM_PROMPT;
+    if (env.LANGFUSE_PUBLIC_KEY && env.LANGFUSE_SECRET_KEY) {
+      const fetched = await fetchPrompt(env, "system-prompt");
+      if (fetched) {
+        systemPrompt = fetched.prompt;
+        promptVersion = fetched.version;
+      }
+    }
+
     const history = await loadHistory(env.CHAT_HISTORY, chatId);
     history.push({ role: "user", parts: [{ text: textForAI }] });
 
     const startTime = new Date().toISOString();
-    const geminiResult = await callGemini(env.GEMINI_API_KEY, history);
+    const geminiResult = await callGemini(env.GEMINI_API_KEY, history, systemPrompt);
     const endTime = new Date().toISOString();
     history.push({ role: "model", parts: [{ text: geminiResult.text }] });
 
@@ -127,11 +137,11 @@ async function saveHistory(kv, chatId, history) {
   await kv.put(chatId, JSON.stringify(trimmed), { expirationTtl: HISTORY_TTL });
 }
 
-async function callGemini(apiKey, history) {
+async function callGemini(apiKey, history, systemPrompt) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
   const body = {
-    systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+    systemInstruction: { parts: [{ text: systemPrompt }] },
     contents: history,
     generationConfig: {
       temperature: 0.4,
