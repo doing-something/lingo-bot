@@ -126,14 +126,14 @@ export default {
     const history = await loadHistory(env.CHAT_HISTORY, chatId);
     history.push({ role: "user", parts: [{ text: textForAI }] });
 
-    const reply = await callGemini(env.GEMINI_API_KEY, history);
-    history.push({ role: "model", parts: [{ text: reply }] });
+    const geminiResult = await callGemini(env.GEMINI_API_KEY, history);
+    history.push({ role: "model", parts: [{ text: geminiResult.text }] });
 
     await saveHistory(env.CHAT_HISTORY, chatId, history);
     if (wasTruncated) {
       await sendTelegram(env.TELEGRAM_TOKEN, chatId, "(텍스트가 길어 앞부분만 분석합니다)");
     }
-    await sendTelegram(env.TELEGRAM_TOKEN, chatId, reply);
+    await sendTelegram(env.TELEGRAM_TOKEN, chatId, geminiResult.text);
 
     return new Response("OK", { status: 200 });
   },
@@ -171,28 +171,29 @@ async function callGemini(apiKey, history) {
     const err = await resp.text();
     console.error(`Gemini API error (${resp.status}):`, err);
     if (resp.status === 429) {
-      return "요청이 너무 많습니다. 잠시 후 다시 시도해주세요.";
+      return { text: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요.", usage: null };
     }
     if (resp.status === 400) {
-      return "텍스트가 너무 길거나 처리할 수 없는 내용입니다. 더 짧은 텍스트로 시도해주세요.";
+      return { text: "텍스트가 너무 길거나 처리할 수 없는 내용입니다. 더 짧은 텍스트로 시도해주세요.", usage: null };
     }
-    return "AI 응답 생성에 실패했습니다. 잠시 후 다시 시도해주세요.";
+    return { text: "AI 응답 생성에 실패했습니다. 잠시 후 다시 시도해주세요.", usage: null };
   }
 
   const data = await resp.json();
+  const usage = data.usageMetadata ?? null;
   const candidate = data.candidates?.[0];
   if (!candidate) {
     console.error("Gemini: no candidates", JSON.stringify(data));
-    return "응답을 생성할 수 없습니다.";
+    return { text: "응답을 생성할 수 없습니다.", usage };
   }
   if (candidate.finishReason === "SAFETY") {
-    return "안전 필터에 의해 응답이 차단되었습니다. 다른 텍스트로 시도해주세요.";
+    return { text: "안전 필터에 의해 응답이 차단되었습니다. 다른 텍스트로 시도해주세요.", usage };
   }
-  const text = candidate.content?.parts?.[0]?.text ?? "응답을 생성할 수 없습니다.";
+  let text = candidate.content?.parts?.[0]?.text ?? "응답을 생성할 수 없습니다.";
   if (candidate.finishReason === "MAX_TOKENS") {
-    return text + "\n\n(응답이 길어 일부가 잘렸습니다)";
+    text += "\n\n(응답이 길어 일부가 잘렸습니다)";
   }
-  return text;
+  return { text, usage };
 }
 
 async function readLimited(stream, maxBytes) {
