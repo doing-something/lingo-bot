@@ -7,8 +7,3 @@ export interface Env {
   LANGFUSE_BASE_URL: string;
   CHAT_HISTORY: KVNamespace;
 }
-
-declare module "*.txt" {
-  const content: string;
-  export default content;
-}
