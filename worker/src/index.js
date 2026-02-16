@@ -179,7 +179,12 @@ async function fetchArticle(url) {
 
   if (text.length > MAX_TEXT_LEN) {
     const cut = text.lastIndexOf(".", MAX_TEXT_LEN);
-    text = cut > MAX_TEXT_LEN * 0.5 ? text.slice(0, cut + 1) : text.slice(0, MAX_TEXT_LEN);
+    if (cut > MAX_TEXT_LEN * 0.5) {
+      text = text.slice(0, cut + 1);
+    } else {
+      const spaceCut = text.lastIndexOf(" ", MAX_TEXT_LEN);
+      text = spaceCut > 0 ? text.slice(0, spaceCut) : text.slice(0, MAX_TEXT_LEN);
+    }
   }
 
   return text || null;
