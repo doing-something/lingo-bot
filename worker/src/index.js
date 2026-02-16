@@ -186,7 +186,8 @@ function splitTelegramMessage(text, maxLen) {
     let breakPos = -1;
     for (const pos of candidates) {
       if (pos >= minBreakPos) {
-        breakPos = Math.max(breakPos, pos);
+        breakPos = pos;
+        break;
       }
     }
 
