@@ -1,5 +1,5 @@
 const MAX_TURNS = 20;
-const HISTORY_TTL = 60 * 60 * 24; // 24시간
+const HISTORY_TTL = 60 * 60 * 24 * 7; // 7일
 const TELEGRAM_MAX_LEN = 4096;
 const TELEGRAM_SAFE_LEN = 3900;
 const MAX_HTML_SIZE = 512 * 1024; // 512KB
