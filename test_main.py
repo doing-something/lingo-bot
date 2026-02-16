@@ -10,6 +10,7 @@ import pytest
 
 from main import (
     fetch_latest_article,
+    _fetch_from_feed,
     fetch_article_body,
     generate_guide,
     send_telegram,
@@ -17,66 +18,56 @@ from main import (
 )
 
 
-# ── fetch_latest_article ─────────────────────────────────────
+# ── fetch_latest_article (RSS 피드 모드) ──────────────────────
 
 
-HEYDESIGNER_HTML = """
-<html><body>
-<article>
-  <ul>
-    <li>
-      <em>promoted</em>
-      <a href="https://example.com/ad">Ad Article</a>
-      <cite>Sponsor</cite>
-    </li>
-    <li>
-      <a href="https://example.com/real">Real Article</a>
-      <cite>Author Kim</cite>
-    </li>
-  </ul>
-</article>
-</body></html>
-"""
-
-ALL_PROMOTED_HTML = """
-<html><body>
-<article>
-  <ul>
-    <li>
-      <em>promoted</em>
-      <a href="https://example.com/ad1">Ad 1</a>
-    </li>
-    <li>
-      <em>promoted</em>
-      <a href="https://example.com/ad2">Ad 2</a>
-    </li>
-  </ul>
-</article>
-</body></html>
-"""
-
-
-@patch("main.requests.get")
-def test_fetch_latest_article_skips_promoted(mock_get):
-    """promoted 글을 건너뛰고 첫 번째 일반 글을 반환한다."""
-    resp = MagicMock()
-    resp.text = HEYDESIGNER_HTML
-    mock_get.return_value = resp
+@patch.dict(os.environ, {"ARTICLE_FEED_URL": "https://example.com/feed"})
+@patch("main.feedparser.parse")
+def test_fetch_latest_article_rss_mode(mock_parse):
+    """ARTICLE_FEED_URL 설정 시 RSS 피드를 파싱한다."""
+    mock_parse.return_value = MagicMock(
+        entries=[
+            {"title": "First Article", "link": "https://example.com/first", "author": "Author Kim"},
+        ]
+    )
 
     title, link, author = fetch_latest_article()
 
-    assert title == "Real Article"
-    assert link == "https://example.com/real"
+    assert title == "First Article"
+    assert link == "https://example.com/first"
     assert author == "Author Kim"
 
 
-@patch("main.requests.get")
-def test_fetch_latest_article_all_promoted_raises(mock_get):
-    """모든 글이 promoted이면 RuntimeError가 발생한다."""
-    resp = MagicMock()
-    resp.text = ALL_PROMOTED_HTML
-    mock_get.return_value = resp
+@patch("main.feedparser.parse")
+def test_feed_empty_raises(mock_parse):
+    """피드에 항목이 없으면 RuntimeError가 발생한다."""
+    mock_parse.return_value = MagicMock(entries=[])
 
+    with pytest.raises(RuntimeError):
+        _fetch_from_feed("https://example.com/feed")
+
+
+@patch.dict(os.environ, {"ARTICLE_FEED_URL": "https://example.com/feed"})
+@patch("main.feedparser.parse")
+def test_fetch_latest_article_uses_required_feed_env(mock_parse):
+    """ARTICLE_FEED_URL 값을 사용해 RSS를 조회한다."""
+    mock_parse.return_value = MagicMock(
+        entries=[
+            {"title": "Env Feed Article", "link": "https://example.com/env", "author": "Author Kim"},
+        ]
+    )
+
+    title, link, author = fetch_latest_article()
+
+    assert title == "Env Feed Article"
+    assert link == "https://example.com/env"
+    assert author == "Author Kim"
+    mock_parse.assert_called_with("https://example.com/feed")
+
+
+@patch.dict(os.environ, {"ARTICLE_FEED_URL": ""})
+def test_fetch_latest_article_raises_without_feed_env():
+    """ARTICLE_FEED_URL 미설정 시 명시적 RuntimeError가 발생한다."""
     with pytest.raises(RuntimeError):
         fetch_latest_article()
 
