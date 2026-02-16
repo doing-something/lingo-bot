@@ -85,13 +85,23 @@ export default {
       await sendTelegram(
         env.TELEGRAM_TOKEN,
         chatId,
-        "영어 학습 봇입니다!\n\n영문 텍스트를 보내면 독해 가이드를 생성하고, 이어서 질문이나 영작 연습을 할 수 있습니다."
+        "영어 학습 봇입니다!\n\n영문 텍스트나 URL을 보내면 독해 가이드를 생성하고, 이어서 질문이나 영작 연습을 할 수 있습니다."
       );
       return new Response("OK", { status: 200 });
     }
 
+    let textForAI = userText;
+    if (isUrl(userText)) {
+      const article = await fetchArticle(userText.trim());
+      if (!article) {
+        await sendTelegram(env.TELEGRAM_TOKEN, chatId, "URL에서 글을 가져올 수 없습니다.");
+        return new Response("OK", { status: 200 });
+      }
+      textForAI = article;
+    }
+
     const history = await loadHistory(env.CHAT_HISTORY, chatId);
-    history.push({ role: "user", parts: [{ text: userText }] });
+    history.push({ role: "user", parts: [{ text: textForAI }] });
 
     const reply = await callGemini(env.GEMINI_API_KEY, history);
     history.push({ role: "model", parts: [{ text: reply }] });
@@ -135,6 +145,37 @@ async function callGemini(apiKey, history) {
 
   const data = await resp.json();
   return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "응답을 생성할 수 없습니다.";
+}
+
+function isUrl(text) {
+  return /^https?:\/\/\S+$/.test(text.trim());
+}
+
+async function fetchArticle(url) {
+  const resp = await fetch(url, {
+    headers: { "User-Agent": "Mozilla/5.0 (compatible; LingoBot/1.0)" },
+    redirect: "follow",
+  });
+  if (!resp.ok) return null;
+
+  const html = await resp.text();
+  const text = html
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<nav[\s\S]*?<\/nav>/gi, "")
+    .replace(/<footer[\s\S]*?<\/footer>/gi, "")
+    .replace(/<header[\s\S]*?<\/header>/gi, "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return text || null;
 }
 
 async function sendTelegram(token, chatId, text) {
