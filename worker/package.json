@@ -6,9 +6,12 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "eval": "promptfoo eval",
+    "eval:view": "promptfoo view"
   },
   "devDependencies": {
+    "promptfoo": "^0.120",
     "vitest": "^4.0.18",
     "wrangler": "^4"
   }
