@@ -102,7 +102,11 @@ export default {
       return new Response("OK", { status: 200 });
     }
 
-    let textForAI = truncateText(userText, MAX_TEXT_LEN);
+    let textForAI = userText;
+    const wasTruncated = userText.length > MAX_TEXT_LEN;
+    if (wasTruncated) {
+      textForAI = truncateText(userText, MAX_TEXT_LEN);
+    }
 
     if (isUrl(userText)) {
       const article = await fetchArticle(userText.trim());
@@ -120,6 +124,9 @@ export default {
     history.push({ role: "model", parts: [{ text: reply }] });
 
     await saveHistory(env.CHAT_HISTORY, chatId, history);
+    if (wasTruncated) {
+      await sendTelegram(env.TELEGRAM_TOKEN, chatId, "(텍스트가 길어 앞부분만 분석합니다)");
+    }
     await sendTelegram(env.TELEGRAM_TOKEN, chatId, reply);
 
     return new Response("OK", { status: 200 });
