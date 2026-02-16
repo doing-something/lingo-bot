@@ -59,6 +59,17 @@ export default {
       return new Response("OK", { status: 200 });
     }
 
+    const webhookSecret = env.TELEGRAM_WEBHOOK_SECRET;
+    if (!webhookSecret) {
+      console.error("Missing TELEGRAM_WEBHOOK_SECRET");
+      return new Response("Server misconfigured", { status: 500 });
+    }
+
+    const incomingSecret = request.headers.get("x-telegram-bot-api-secret-token");
+    if (incomingSecret !== webhookSecret) {
+      return new Response("Forbidden", { status: 403 });
+    }
+
     const update = await request.json();
     const message = update.message;
     if (!message?.text) {
