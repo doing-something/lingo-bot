@@ -87,7 +87,17 @@ export default {
       await sendTelegram(
         env.TELEGRAM_TOKEN,
         chatId,
-        "영어 학습 봇입니다!\n\n영문 텍스트나 URL을 보내면 독해 가이드를 생성하고, 이어서 질문이나 영작 연습을 할 수 있습니다."
+        "영어 학습 봇입니다!\n\n영문 텍스트나 URL을 보내면 독해 가이드를 생성하고, 이어서 질문이나 영작 연습을 할 수 있습니다.\n\n/clear - 대화 초기화"
+      );
+      return new Response("OK", { status: 200 });
+    }
+
+    if (userText === "/clear") {
+      await env.CHAT_HISTORY.delete(chatId);
+      await sendTelegram(
+        env.TELEGRAM_TOKEN,
+        chatId,
+        "대화 기록을 초기화했습니다. 새로운 텍스트나 URL을 보내주세요."
       );
       return new Response("OK", { status: 200 });
     }
