@@ -1,0 +1,30 @@
+name: Prompt Eval
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - worker/prompts/**
+      - worker/promptfooconfig.yaml
+  pull_request:
+    branches: [main]
+    paths:
+      - worker/prompts/**
+      - worker/promptfooconfig.yaml
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: worker/package-lock.json
+      - run: npm ci
+        working-directory: worker
+      - run: npm run eval
+        working-directory: worker
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
