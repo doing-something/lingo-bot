@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildIngestionPayload } from "./langfuse.js";
+import { buildIngestionPayload, buildScorePayload } from "./langfuse.js";
 
 describe("buildIngestionPayload", () => {
   const baseArgs = {
@@ -71,5 +71,45 @@ describe("buildIngestionPayload", () => {
     payload.batch.forEach((e) => {
       expect(e.timestamp).toBeDefined();
     });
+  });
+});
+
+describe("buildScorePayload", () => {
+  it("given good feedback, when built, then returns score-create with value 1", () => {
+    const payload = buildScorePayload({ traceId: "trace-1", score: 1 });
+
+    expect(payload.batch).toHaveLength(1);
+    expect(payload.batch[0].type).toBe("score-create");
+    expect(payload.batch[0].body.value).toBe(1);
+  });
+
+  it("given bad feedback, when built, then returns score-create with value 0", () => {
+    const payload = buildScorePayload({ traceId: "trace-1", score: 0 });
+
+    expect(payload.batch[0].body.value).toBe(0);
+  });
+
+  it("given traceId, when built, then body references the trace", () => {
+    const payload = buildScorePayload({ traceId: "trace-abc", score: 1 });
+
+    expect(payload.batch[0].body.traceId).toBe("trace-abc");
+    expect(payload.batch[0].body.name).toBe("user-feedback");
+    expect(payload.batch[0].body.dataType).toBe("NUMERIC");
+  });
+
+  it("given payload, when built, then event and body have unique ids", () => {
+    const payload = buildScorePayload({ traceId: "trace-1", score: 1 });
+
+    const eventId = payload.batch[0].id;
+    const bodyId = payload.batch[0].body.id;
+    expect(eventId).toBeDefined();
+    expect(bodyId).toBeDefined();
+    expect(eventId).not.toBe(bodyId);
+  });
+
+  it("given payload, when built, then event has ISO timestamp", () => {
+    const payload = buildScorePayload({ traceId: "trace-1", score: 1 });
+
+    expect(payload.batch[0].timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 });
