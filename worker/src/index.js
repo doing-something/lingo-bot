@@ -188,11 +188,11 @@ function concatUint8(arrays) {
   return result;
 }
 
-function isUrl(text) {
+export function isUrl(text) {
   return /^https?:\/\/\S+$/.test(text.trim());
 }
 
-function truncateText(text, maxLen) {
+export function truncateText(text, maxLen) {
   if (text.length <= maxLen) return text;
   const cut = text.lastIndexOf(".", maxLen);
   if (cut > maxLen * 0.5) return text.slice(0, cut + 1);
@@ -200,7 +200,7 @@ function truncateText(text, maxLen) {
   return spaceCut > 0 ? text.slice(0, spaceCut) : text.slice(0, maxLen);
 }
 
-function extractMainContent(html) {
+export function extractMainContent(html) {
   const articleMatch = html.match(/<article[\s>][\s\S]*?<\/article>/i);
   if (articleMatch) return articleMatch[0];
 
@@ -264,7 +264,7 @@ async function sendTelegram(token, chatId, text) {
   }
 }
 
-function splitTelegramMessage(text, maxLen) {
+export function splitTelegramMessage(text, maxLen) {
   const source = String(text ?? "");
   if (source.length <= maxLen) {
     return [source];
