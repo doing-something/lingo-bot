@@ -68,20 +68,24 @@ export function buildIngestionPayload({ traceId, generationId, chatId, input, ou
  * @param {{ batch: Array }} payload - buildIngestionPayload의 반환값
  */
 export async function sendToLangfuse(env, payload) {
-  const baseUrl = env.LANGFUSE_BASE_URL || "https://us.cloud.langfuse.com";
-  const credentials = btoa(`${env.LANGFUSE_PUBLIC_KEY}:${env.LANGFUSE_SECRET_KEY}`);
+  try {
+    const baseUrl = env.LANGFUSE_BASE_URL || "https://us.cloud.langfuse.com";
+    const credentials = btoa(`${env.LANGFUSE_PUBLIC_KEY}:${env.LANGFUSE_SECRET_KEY}`);
 
-  const resp = await fetch(`${baseUrl}/api/public/ingestion`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Basic ${credentials}`,
-    },
-    body: JSON.stringify(payload),
-  });
+    const resp = await fetch(`${baseUrl}/api/public/ingestion`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Basic ${credentials}`,
+      },
+      body: JSON.stringify(payload),
+    });
 
-  if (!resp.ok) {
-    const err = await resp.text();
-    console.error(`Langfuse ingestion error (${resp.status}):`, err);
+    if (!resp.ok) {
+      const err = await resp.text();
+      console.error(`Langfuse ingestion error (${resp.status}):`, err);
+    }
+  } catch (e) {
+    console.error("Langfuse send failed:", e);
   }
 }
