@@ -49,18 +49,18 @@ describe("buildIngestionPayload", () => {
   it("given usage metadata, when built, then maps Gemini fields to Langfuse format", () => {
     const { body } = buildIngestionPayload(baseArgs).batch[1];
 
-    expect(body.usage).toEqual({
-      input_tokens: 10,
-      output_tokens: 20,
-      total_tokens: 30,
+    expect(body.usageDetails).toEqual({
+      input: 10,
+      output: 20,
+      total: 30,
     });
   });
 
-  it("given null usage, when built, then generation has undefined usage", () => {
+  it("given null usage, when built, then generation has undefined usageDetails", () => {
     const args = { ...baseArgs, usage: null };
     const { body } = buildIngestionPayload(args).batch[1];
 
-    expect(body.usage).toBeUndefined();
+    expect(body.usageDetails).toBeUndefined();
   });
 
   it("given batch events, when built, then each event has unique id and timestamp", () => {

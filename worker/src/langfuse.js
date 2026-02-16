@@ -46,11 +46,11 @@ export function buildIngestionPayload({ traceId, generationId, chatId, input, ou
           model: model ?? "gemini-2.0-flash",
           input,
           output,
-          usage: usage
+          usageDetails: usage
             ? {
-                input_tokens: usage.promptTokenCount,
-                output_tokens: usage.candidatesTokenCount,
-                total_tokens: usage.totalTokenCount,
+                input: usage.promptTokenCount,
+                output: usage.candidatesTokenCount,
+                total: usage.totalTokenCount,
               }
             : undefined,
         },
