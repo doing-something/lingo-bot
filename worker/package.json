@@ -11,7 +11,9 @@
     "eval:view": "promptfoo view"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4",
     "promptfoo": "^0.120",
+    "typescript": "^5",
     "vitest": "^4.0.18",
     "wrangler": "^4"
   }
