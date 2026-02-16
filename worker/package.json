@@ -7,7 +7,7 @@
     "deploy": "wrangler deploy",
     "test": "vitest run",
     "test:watch": "vitest",
-    "eval": "promptfoo eval",
+    "eval": "node --env-file-if-exists=.dev.vars node_modules/.bin/promptfoo eval",
     "eval:view": "promptfoo view"
   },
   "devDependencies": {

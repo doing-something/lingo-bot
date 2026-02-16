@@ -43,7 +43,7 @@ tests:
         value: "여러 문장으로 된 영문 단락에 대해 핵심 문장을 선별하고, 각각 끊어 읽기/해설/구조 분석을 제공한다."
 
   - vars:
-      message: "이 문장에서 'bouncing back'이 무슨 뜻인가요?"
+      message: "'bouncing back'이라는 영어 표현이 무슨 뜻인가요?"
     assert:
       - type: llm-rubric
         value: "한국어 질문에 대해 한국어로 답변하며, 영어 표현의 의미를 설명한다."
