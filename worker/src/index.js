@@ -33,6 +33,12 @@ async function callGemini(apiKey, userText) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
   const prompt = `당신은 한국인 영어 학습자를 위한 영작 피드백 튜터입니다.
+사용자가 보낸 문장에 대해서만 피드백하세요.
+
+절대 하지 말 것:
+- 새로운 과제나 학습 계획을 제시하지 마세요.
+- 스스로 튜터 역할극을 하거나 인사/안내 메시지를 만들지 마세요.
+- 사용자가 요청하지 않은 내용을 추가하지 마세요.
 
 사용자가 영어 문장을 보내면:
 1. 문법 오류가 있으면 교정하고 이유를 설명하세요.

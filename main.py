@@ -1,5 +1,6 @@
 import os
 import requests
+import feedparser
 from bs4 import BeautifulSoup
 from google import genai
 from dotenv import load_dotenv
@@ -11,7 +12,7 @@ GEMINI_API_KEY = os.environ["GEMINI_API_KEY"]
 TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
 TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 
-# ── HeyDesigner 최신 글 크롤링 ─────────────────────────────
+# ── 최신 글 가져오기 ─────────────────────────────────────────
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -20,26 +21,23 @@ HEADERS = {
 
 
 def fetch_latest_article():
-    resp = requests.get("https://heydesigner.com/", timeout=30, headers=HEADERS)
-    resp.raise_for_status()
-    soup = BeautifulSoup(resp.text, "html.parser")
-
-    for li in soup.select("article li"):
-        em = li.select_one("em")
-        if em and "promoted" in em.get_text():
-            continue
-        a = li.select_one("a")
-        if not a:
-            continue
-        title = a.get_text(strip=True)
-        link = a["href"]
-        cite = li.select_one("cite")
-        author = cite.get_text(strip=True) if cite else ""
-        return title, link, author
-
-    raise RuntimeError("최신 글을 찾을 수 없습니다.")
+    feed_url = os.environ.get("ARTICLE_FEED_URL", "").strip()
+    if not feed_url:
+        raise RuntimeError(
+            "ARTICLE_FEED_URL 환경 변수가 필요합니다. 예: ARTICLE_FEED_URL=https://heydesigner.com/feed/"
+        )
+    return _fetch_from_feed(feed_url)
 
 
+def _fetch_from_feed(feed_url):
+    feed = feedparser.parse(feed_url)
+    if not feed.entries:
+        raise RuntimeError("피드에서 글을 찾을 수 없습니다.")
+    entry = feed.entries[0]
+    title = entry.get("title", "")
+    link = entry.get("link", "")
+    author = entry.get("author", "")
+    return title, link, author
 # ── 아티클 본문 크롤링 ────────────────────────────────────
 def fetch_article_body(link, max_chars=10000):
     resp = requests.get(link, timeout=30, headers=HEADERS)
