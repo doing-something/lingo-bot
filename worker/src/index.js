@@ -1,3 +1,5 @@
+import { buildIngestionPayload, sendToLangfuse } from "./langfuse.js";
+
 const MAX_TURNS = 20;
 const HISTORY_TTL = 60 * 60 * 24 * 7; // 7일
 const TELEGRAM_MAX_LEN = 4096;
@@ -63,7 +65,7 @@ n)
 - 사용자가 요청하지 않은 새로운 과제나 학습 계획을 제시하지 마세요.`;
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     if (request.method !== "POST") {
       return new Response("OK", { status: 200 });
     }
@@ -126,7 +128,9 @@ export default {
     const history = await loadHistory(env.CHAT_HISTORY, chatId);
     history.push({ role: "user", parts: [{ text: textForAI }] });
 
+    const startTime = new Date().toISOString();
     const geminiResult = await callGemini(env.GEMINI_API_KEY, history);
+    const endTime = new Date().toISOString();
     history.push({ role: "model", parts: [{ text: geminiResult.text }] });
 
     await saveHistory(env.CHAT_HISTORY, chatId, history);
@@ -134,6 +138,20 @@ export default {
       await sendTelegram(env.TELEGRAM_TOKEN, chatId, "(텍스트가 길어 앞부분만 분석합니다)");
     }
     await sendTelegram(env.TELEGRAM_TOKEN, chatId, geminiResult.text);
+
+    if (env.LANGFUSE_PUBLIC_KEY && env.LANGFUSE_SECRET_KEY) {
+      const payload = buildIngestionPayload({
+        traceId: crypto.randomUUID(),
+        generationId: crypto.randomUUID(),
+        chatId,
+        input: textForAI,
+        output: geminiResult.text,
+        usage: geminiResult.usage,
+        startTime,
+        endTime,
+      });
+      ctx.waitUntil(sendToLangfuse(env, payload));
+    }
 
     return new Response("OK", { status: 200 });
   },
