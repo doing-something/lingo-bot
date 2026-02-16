@@ -1,4 +1,4 @@
-import { buildIngestionPayload, sendToLangfuse } from "./langfuse.js";
+import { buildIngestionPayload, buildScorePayload, sendToLangfuse } from "./langfuse.js";
 
 const MAX_TURNS = 20;
 const HISTORY_TTL = 60 * 60 * 24 * 7; // 7일
@@ -74,6 +74,22 @@ export default {
     }
 
     const update = await request.json();
+
+    if (update.callback_query) {
+      const cb = update.callback_query;
+      const cbChatId = String(cb.message.chat.id);
+      const traceId = await env.CHAT_HISTORY.get(`score:${cbChatId}`);
+
+      if (traceId && env.LANGFUSE_PUBLIC_KEY && env.LANGFUSE_SECRET_KEY) {
+        const score = cb.data === "good" ? 1 : 0;
+        const payload = buildScorePayload({ traceId, score });
+        ctx.waitUntil(sendToLangfuse(env, payload));
+      }
+
+      await answerCallbackQuery(env.TELEGRAM_TOKEN, cb.id, cb.data === "good" ? "감사합니다!" : "피드백 감사합니다!");
+      return new Response("OK", { status: 200 });
+    }
+
     const message = update.message;
     if (!message?.text) {
       return new Response("OK", { status: 200 });
@@ -292,6 +308,14 @@ async function fetchArticle(url) {
   }
 
   return text ? { text, truncated } : null;
+}
+
+async function answerCallbackQuery(token, callbackQueryId, text) {
+  await fetch(`https://api.telegram.org/bot${token}/answerCallbackQuery`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ callback_query_id: callbackQueryId, text }),
+  });
 }
 
 async function sendTelegram(token, chatId, text, replyMarkup) {
