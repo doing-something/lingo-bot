@@ -26,7 +26,7 @@
 
 ## 파일 구조
 - `worker/src/index.js` — Webhook 수신 + KV 대화 기록 + Gemini 멀티턴 호출 + 텔레그램 답장
-- `worker/src/constants.js` — 시스템 프롬프트(폴백), 상수
+- `worker/src/constants.js` — 상수 + system-prompt.txt import
 - `worker/prompts/system-prompt.txt` — 시스템 프롬프트 원본 (promptfoo 평가 대상)
 - `worker/promptfooconfig.yaml` — promptfoo 평가 설정 + 테스트 케이스
 - `worker/wrangler.toml` — Worker 설정 + KV 바인딩
