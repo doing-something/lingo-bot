@@ -72,6 +72,21 @@ describe("buildIngestionPayload", () => {
       expect(e.timestamp).toBeDefined();
     });
   });
+
+  it("given promptName and promptVersion, when built, then generation includes prompt info", () => {
+    const args = { ...baseArgs, promptName: "system-prompt", promptVersion: 3 };
+    const { body } = buildIngestionPayload(args).batch[1];
+
+    expect(body.promptName).toBe("system-prompt");
+    expect(body.promptVersion).toBe(3);
+  });
+
+  it("given no prompt info, when built, then generation has undefined prompt fields", () => {
+    const { body } = buildIngestionPayload(baseArgs).batch[1];
+
+    expect(body.promptName).toBeUndefined();
+    expect(body.promptVersion).toBeUndefined();
+  });
 });
 
 describe("buildScorePayload", () => {
