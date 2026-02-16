@@ -152,7 +152,7 @@ async function callGemini(apiKey, history) {
     contents: history,
     generationConfig: {
       temperature: 0.4,
-      maxOutputTokens: 4096,
+      maxOutputTokens: 8192,
     },
   };
 
@@ -177,7 +177,11 @@ async function callGemini(apiKey, history) {
   if (candidate.finishReason === "SAFETY") {
     return "안전 필터에 의해 응답이 차단되었습니다. 다른 텍스트로 시도해주세요.";
   }
-  return candidate.content?.parts?.[0]?.text ?? "응답을 생성할 수 없습니다.";
+  const text = candidate.content?.parts?.[0]?.text ?? "응답을 생성할 수 없습니다.";
+  if (candidate.finishReason === "MAX_TOKENS") {
+    return text + "\n\n(응답이 길어 일부가 잘렸습니다)";
+  }
+  return text;
 }
 
 async function readLimited(stream, maxBytes) {
