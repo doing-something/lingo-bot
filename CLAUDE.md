@@ -17,7 +17,7 @@
 
 ## 환경 변수
 - `GEMINI_API_KEY`, `TELEGRAM_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`
-- `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY` (LLM 모니터링)
+- `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_BASE_URL` (LLM 모니터링, BASE_URL 기본값: `https://us.cloud.langfuse.com`)
 - KV namespace: `CHAT_HISTORY` (wrangler.toml에 바인딩)
 - Worker 로컬 개발: `worker/.dev.vars` (루트 `.env` 심링크)
 - Worker 배포: `wrangler secret put`으로 등록
