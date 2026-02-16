@@ -26,8 +26,11 @@
 - Worker 배포: `wrangler secret put`으로 등록
 
 ## 파일 구조
-- `worker/src/index.js` — Webhook 수신 + KV 대화 기록 + Gemini 멀티턴 호출 + 텔레그램 답장
-- `worker/src/constants.js` — 상수 + system-prompt.txt import
+- `worker/src/index.ts` — Webhook 수신 + KV 대화 기록 + Gemini 멀티턴 호출 + 텔레그램 답장
+- `worker/src/constants.ts` — 상수 + system-prompt.txt import
+- `worker/src/langfuse.ts` — Langfuse 연동 (ingestion payload 조립, 프롬프트 캐싱, 전송)
+- `worker/src/types.ts` — Env 인터페이스 + *.txt 모듈 선언
 - `worker/prompts/system-prompt.txt` — 시스템 프롬프트 원본 (promptfoo 평가 대상)
 - `worker/promptfooconfig.yaml` — promptfoo 평가 설정 + 테스트 케이스
+- `worker/tsconfig.json` — TypeScript 설정 (strict, noEmit)
 - `worker/wrangler.toml` — Worker 설정 + KV 바인딩
