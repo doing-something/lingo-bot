@@ -151,6 +151,11 @@ export default {
 
     const traceId = crypto.randomUUID();
 
+    if (wasTruncated) {
+      await sendTelegram(env.TELEGRAM_TOKEN, chatId, "(텍스트가 길어 앞부분만 분석합니다)");
+    }
+    await sendTelegram(env.TELEGRAM_TOKEN, chatId, geminiResult.text, feedbackKeyboard(traceId));
+
     if (env.LANGFUSE_PUBLIC_KEY && env.LANGFUSE_SECRET_KEY) {
       const payload = buildIngestionPayload({
         traceId,
@@ -164,11 +169,6 @@ export default {
       });
       ctx.waitUntil(sendToLangfuse(env, payload));
     }
-
-    if (wasTruncated) {
-      await sendTelegram(env.TELEGRAM_TOKEN, chatId, "(텍스트가 길어 앞부분만 분석합니다)");
-    }
-    await sendTelegram(env.TELEGRAM_TOKEN, chatId, geminiResult.text, feedbackKeyboard(traceId));
 
     return new Response("OK", { status: 200 });
   },
