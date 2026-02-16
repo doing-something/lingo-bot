@@ -2,6 +2,8 @@ const MAX_TURNS = 20;
 const HISTORY_TTL = 60 * 60 * 24; // 24시간
 const TELEGRAM_MAX_LEN = 4096;
 const TELEGRAM_SAFE_LEN = 3900;
+const MAX_HTML_SIZE = 512 * 1024; // 512KB
+const MAX_TEXT_LEN = 10000;
 
 const SYSTEM_PROMPT = `당신은 한국인 영어 학습자를 위한 영어 독해/영작 튜터입니다.
 
@@ -158,8 +160,11 @@ async function fetchArticle(url) {
   });
   if (!resp.ok) return null;
 
-  const html = await resp.text();
-  const text = html
+  const contentLength = resp.headers.get("content-length");
+  if (contentLength && parseInt(contentLength) > MAX_HTML_SIZE) return null;
+
+  const html = (await resp.text()).slice(0, MAX_HTML_SIZE);
+  let text = html
     .replace(/<script[\s\S]*?<\/script>/gi, "")
     .replace(/<style[\s\S]*?<\/style>/gi, "")
     .replace(/<nav[\s\S]*?<\/nav>/gi, "")
@@ -174,6 +179,11 @@ async function fetchArticle(url) {
     .replace(/&#39;/g, "'")
     .replace(/\s+/g, " ")
     .trim();
+
+  if (text.length > MAX_TEXT_LEN) {
+    const cut = text.lastIndexOf(".", MAX_TEXT_LEN);
+    text = cut > MAX_TEXT_LEN * 0.5 ? text.slice(0, cut + 1) : text.slice(0, MAX_TEXT_LEN);
+  }
 
   return text || null;
 }
