@@ -82,17 +82,18 @@ export default {
       wasTruncated = true;
     }
 
+    const langfuseEnabled = env.LANGFUSE_PUBLIC_KEY && env.LANGFUSE_SECRET_KEY;
+    const [history, fetched] = await Promise.all([
+      loadHistory(env.CHAT_HISTORY, chatId),
+      langfuseEnabled ? fetchPrompt(env, "system-prompt") : null,
+    ]);
+
     let promptVersion = null;
     let systemPrompt = SYSTEM_PROMPT;
-    if (env.LANGFUSE_PUBLIC_KEY && env.LANGFUSE_SECRET_KEY) {
-      const fetched = await fetchPrompt(env, "system-prompt");
-      if (fetched) {
-        systemPrompt = fetched.prompt;
-        promptVersion = fetched.version;
-      }
+    if (fetched) {
+      systemPrompt = fetched.prompt;
+      promptVersion = fetched.version;
     }
-
-    const history = await loadHistory(env.CHAT_HISTORY, chatId);
     history.push({ role: "user", parts: [{ text: textForAI }] });
 
     const startTime = new Date().toISOString();
@@ -100,7 +101,7 @@ export default {
     const endTime = new Date().toISOString();
     history.push({ role: "model", parts: [{ text: geminiResult.text }] });
 
-    await saveHistory(env.CHAT_HISTORY, chatId, history);
+    ctx.waitUntil(saveHistory(env.CHAT_HISTORY, chatId, history));
 
     const traceId = crypto.randomUUID();
 
@@ -109,7 +110,7 @@ export default {
     }
     await sendTelegram(env.TELEGRAM_TOKEN, chatId, geminiResult.text, feedbackKeyboard(traceId));
 
-    if (env.LANGFUSE_PUBLIC_KEY && env.LANGFUSE_SECRET_KEY) {
+    if (langfuseEnabled) {
       const payload = buildIngestionPayload({
         traceId,
         generationId: crypto.randomUUID(),
