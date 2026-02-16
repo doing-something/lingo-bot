@@ -120,6 +120,10 @@ export async function fetchPrompt(env, promptName) {
     }
 
     const data = await resp.json();
+    if (typeof data.prompt !== "string") {
+      console.error("Langfuse prompt is not text type, got:", typeof data.prompt);
+      return null;
+    }
     const result = { prompt: data.prompt, version: data.version };
     await env.CHAT_HISTORY.put(cacheKey, JSON.stringify(result), { expirationTtl: PROMPT_CACHE_TTL });
     return result;
