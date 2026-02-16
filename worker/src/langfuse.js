@@ -86,6 +86,45 @@ export function buildScorePayload({ traceId, score }) {
   };
 }
 
+const PROMPT_CACHE_TTL = 300; // 5분
+
+/**
+ * Langfuse에서 프롬프트를 가져온다.
+ * KV에 5분간 캐싱하여 매 요청마다 API를 호출하지 않는다.
+ * 실패 시 null을 반환한다 (호출부에서 fallback 사용).
+ *
+ * @param {Object} env - Worker 환경변수
+ * @param {string} promptName - Langfuse에 등록된 프롬프트 이름
+ * @returns {Promise<{ prompt: string, version: number } | null>}
+ */
+export async function fetchPrompt(env, promptName) {
+  const cacheKey = `prompt:${promptName}`;
+  const cached = await env.CHAT_HISTORY.get(cacheKey, "json");
+  if (cached) return cached;
+
+  try {
+    const baseUrl = env.LANGFUSE_BASE_URL || "https://us.cloud.langfuse.com";
+    const credentials = btoa(`${env.LANGFUSE_PUBLIC_KEY}:${env.LANGFUSE_SECRET_KEY}`);
+
+    const resp = await fetch(`${baseUrl}/api/public/v2/prompts/${encodeURIComponent(promptName)}?label=production`, {
+      headers: { Authorization: `Basic ${credentials}` },
+    });
+
+    if (!resp.ok) {
+      console.error(`Langfuse prompt fetch error (${resp.status}):`, await resp.text());
+      return null;
+    }
+
+    const data = await resp.json();
+    const result = { prompt: data.prompt, version: data.version };
+    await env.CHAT_HISTORY.put(cacheKey, JSON.stringify(result), { expirationTtl: PROMPT_CACHE_TTL });
+    return result;
+  } catch (e) {
+    console.error("Langfuse prompt fetch failed:", e);
+    return null;
+  }
+}
+
 /**
  * Langfuse ingestion API에 payload를 전송한다.
  * Basic Auth (LANGFUSE_PUBLIC_KEY:LANGFUSE_SECRET_KEY) 사용.
