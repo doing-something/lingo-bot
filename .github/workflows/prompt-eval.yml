@@ -24,7 +24,15 @@ jobs:
           cache-dependency-path: worker/package-lock.json
       - run: npm ci
         working-directory: worker
-      - run: npm run eval:all
+      - run: npm run eval:ci
         working-directory: worker
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      - name: Upload promptfoo artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: promptfoo-results-${{ github.run_id }}
+          path: worker/.promptfoo-results/
+          if-no-files-found: warn
+          retention-days: 14

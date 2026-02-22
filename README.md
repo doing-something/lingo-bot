@@ -91,6 +91,9 @@ npm run eval:all      # 독해/영작 출제/영작 평가 프롬프트 평가 �
 npm run eval:view     # 결과 확인
 ```
 
+GitHub Actions의 `Prompt Eval` 워크플로우는 `worker/.promptfoo-results/`에 JSON/HTML 결과를 생성하고,
+실행 아티팩트(`promptfoo-results-<run_id>`)로 업로드합니다.
+
 ## 기술 스택
 - Cloudflare Workers + KV
 - Gemini 2.0 Flash
