@@ -1,0 +1,45 @@
+prompts:
+  - file://prompts/writing-eval-user-prompt.txt
+
+providers:
+  - id: google:gemini-2.0-flash
+    config:
+      systemInstruction: file://prompts/writing-eval-system-prompt.txt
+
+defaultTest:
+  options:
+    provider: google:gemini-2.0-flash
+  assert:
+    - type: not-icontains
+      value: "**"
+    - type: not-icontains
+      value: "##"
+    - type: javascript
+      value: "!output.includes('```')"
+
+tests:
+  - vars:
+      type: "구문"
+      question: >
+        한국어 문장: 회복탄력성은 단순히 원래 상태로 돌아가는 것이 아니다.
+        힌트: not about A, but B
+      context: >
+        [핵심 표현] be not about A, but B
+      user_answer: "Resilience is not about bouncing back where you were before."
+    assert:
+      - type: icontains
+        value: "모범 답안"
+      - type: llm-rubric
+        value: "답안의 좋은 점과 개선점을 균형 있게 설명하고, 자연스러운 모범 답안을 제시한다."
+
+  - vars:
+      type: "빈칸"
+      question: >
+        한국어 문장: 역경을 통해 더 강해진다.
+        힌트: emerge stronger through adversity
+      context: >
+        [핵심 표현] emerge stronger through adversity
+      user_answer: "They get strong from hard things."
+    assert:
+      - type: llm-rubric
+        value: "학습자 수준을 고려해 구체적 수정 제안을 제공하고, 핵심 포인트를 한 줄로 정리한다."

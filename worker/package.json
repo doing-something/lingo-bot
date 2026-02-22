@@ -8,6 +8,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "eval": "node --env-file-if-exists=.dev.vars node_modules/.bin/promptfoo eval",
+    "eval:writing-question": "node --env-file-if-exists=.dev.vars node_modules/.bin/promptfoo eval -c promptfooconfig.writing-question.yaml",
+    "eval:writing-eval": "node --env-file-if-exists=.dev.vars node_modules/.bin/promptfoo eval -c promptfooconfig.writing-eval.yaml",
+    "eval:all": "npm run eval && npm run eval:writing-question && npm run eval:writing-eval",
     "eval:view": "promptfoo view"
   },
   "devDependencies": {

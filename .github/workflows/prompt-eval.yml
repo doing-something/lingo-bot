@@ -5,12 +5,12 @@ on:
     branches: [main]
     paths:
       - worker/prompts/**
-      - worker/promptfooconfig.yaml
+      - worker/promptfooconfig*.yaml
   pull_request:
     branches: [main]
     paths:
       - worker/prompts/**
-      - worker/promptfooconfig.yaml
+      - worker/promptfooconfig*.yaml
 
 jobs:
   eval:
@@ -24,7 +24,7 @@ jobs:
           cache-dependency-path: worker/package-lock.json
       - run: npm ci
         working-directory: worker
-      - run: npm run eval
+      - run: npm run eval:all
         working-directory: worker
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}

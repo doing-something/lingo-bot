@@ -1,0 +1,41 @@
+prompts:
+  - file://prompts/writing-question-user-prompt.txt
+
+providers:
+  - id: google:gemini-2.0-flash
+    config:
+      systemInstruction: file://prompts/writing-question-system-prompt.txt
+
+defaultTest:
+  options:
+    provider: google:gemini-2.0-flash
+  assert:
+    - type: not-icontains
+      value: "**"
+    - type: not-icontains
+      value: "##"
+    - type: javascript
+      value: "!output.includes('```')"
+
+tests:
+  - vars:
+      type: "단어"
+      context: >
+        [핵심 문장 + 한글 해설]
+        1) Resilience is not about bouncing back.
+        한글 해설(의미): 회복탄력성은 단순한 복귀가 아니다.
+        [핵심 표현] bounce back, adversity, emerge stronger
+    assert:
+      - type: llm-rubric
+        value: "출력은 한국어 영작 문제 1개와 학습 힌트 1줄을 포함하고, 정답 예시는 포함하지 않는다."
+      - type: not-icontains
+        value: "정답"
+
+  - vars:
+      type: "패턴"
+      context: >
+        [핵심 문장 + 한글 해설]
+        Those who cultivate resilience see challenges as opportunities.
+    assert:
+      - type: llm-rubric
+        value: "문제 유형이 패턴 중심이며, 학습자가 한글 문장을 영어로 바꿔 쓰도록 유도한다."

@@ -87,7 +87,7 @@ cd worker && npm run dev
 ### 프롬프트 평가
 ```bash
 cd worker
-npm run eval          # 평가 실행
+npm run eval:all      # 독해/영작 출제/영작 평가 프롬프트 평가 실행
 npm run eval:view     # 결과 확인
 ```
 
