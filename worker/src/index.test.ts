@@ -4,6 +4,8 @@ import {
   truncateText,
   extractMainContent,
   splitTelegramMessage,
+  isLikelyEnglishStudyText,
+  pickQuestionType,
 } from "./index.js";
 
 describe("isUrl", () => {
@@ -205,5 +207,32 @@ describe("splitTelegramMessage", () => {
     chunks.forEach((chunk) => {
       expect(chunk.length).toBeGreaterThan(0);
     });
+  });
+});
+
+describe("isLikelyEnglishStudyText", () => {
+  it("given long english paragraph, when checked, then returns true", () => {
+    const text = "This is a longer English paragraph for study use. It has enough words and structure to be treated as source input.";
+    expect(isLikelyEnglishStudyText(text)).toBe(true);
+  });
+
+  it("given short message, when checked, then returns false", () => {
+    expect(isLikelyEnglishStudyText("hello")).toBe(false);
+  });
+
+  it("given mostly korean text, when checked, then returns false", () => {
+    const text = "이 문장은 한국어가 훨씬 많고 영어는 test 정도만 포함됩니다.";
+    expect(isLikelyEnglishStudyText(text)).toBe(false);
+  });
+});
+
+describe("pickQuestionType", () => {
+  it("given index sequence, when selected, then cycles through all types", () => {
+    expect(pickQuestionType(0)).toBe("단어");
+    expect(pickQuestionType(1)).toBe("구문");
+    expect(pickQuestionType(2)).toBe("패턴");
+    expect(pickQuestionType(3)).toBe("변환");
+    expect(pickQuestionType(4)).toBe("빈칸");
+    expect(pickQuestionType(5)).toBe("단어");
   });
 });
