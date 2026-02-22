@@ -17,3 +17,11 @@ export function feedbackKeyboard(traceId: string) {
     ]],
   };
 }
+
+export function nextQuestionKeyboard() {
+  return {
+    inline_keyboard: [[
+      { text: "\u27A1\uFE0F \uB2E4\uC74C \uC9C8\uBB38", callback_data: "next_writing" },
+    ]],
+  };
+}
