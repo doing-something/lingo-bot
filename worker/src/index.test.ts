@@ -6,6 +6,7 @@ import {
   splitTelegramMessage,
   isLikelyEnglishStudyText,
   pickQuestionType,
+  splitStudyGuideIntoMessages,
 } from "./index.js";
 
 describe("isUrl", () => {
@@ -234,5 +235,30 @@ describe("pickQuestionType", () => {
     expect(pickQuestionType(3)).toBe("변환");
     expect(pickQuestionType(4)).toBe("빈칸");
     expect(pickQuestionType(5)).toBe("단어");
+  });
+});
+
+describe("splitStudyGuideIntoMessages", () => {
+  it("given study guide text, when split, then returns one sentence per message", () => {
+    const text = "[핵심 문장 + 한글 해설]\nThis is sentence one. This is sentence two.\n한글 해설(의미):\n자연스러운 한국어 설명입니다.";
+    const chunks = splitStudyGuideIntoMessages(text, 3900);
+
+    expect(chunks).toEqual([
+      "[핵심 문장 + 한글 해설]",
+      "This is sentence one.",
+      "This is sentence two.",
+      "한글 해설(의미):",
+      "자연스러운 한국어 설명입니다.",
+    ]);
+  });
+
+  it("given overly long sentence, when split, then falls back to telegram chunk split", () => {
+    const longSentence = `Intro ${"word ".repeat(20).trim()}.`;
+    const chunks = splitStudyGuideIntoMessages(longSentence, 20);
+
+    expect(chunks.length).toBeGreaterThan(1);
+    chunks.forEach((chunk) => {
+      expect(chunk.length).toBeLessThanOrEqual(20);
+    });
   });
 });
