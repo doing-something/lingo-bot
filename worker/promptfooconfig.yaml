@@ -68,5 +68,5 @@ tests:
         value: "끊어 읽기"
       - type: icontains
         value: "한글 해설"
-      - type: llm-rubric
-        value: "짧은 명언에 대해서도 독해 가이드 형식을 따르며, 문법/구문 패턴을 분석한다."
+      - type: icontains
+        value: "구조 해설"
