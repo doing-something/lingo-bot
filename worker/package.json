@@ -11,6 +11,7 @@
     "eval:writing-question": "node --env-file-if-exists=.dev.vars node_modules/.bin/promptfoo eval -c promptfooconfig.writing-question.yaml",
     "eval:writing-eval": "node --env-file-if-exists=.dev.vars node_modules/.bin/promptfoo eval -c promptfooconfig.writing-eval.yaml",
     "eval:all": "npm run eval && npm run eval:writing-question && npm run eval:writing-eval",
+    "eval:ci": "mkdir -p .promptfoo-results && node_modules/.bin/promptfoo eval -c promptfooconfig.yaml -o .promptfoo-results/reading.json -o .promptfoo-results/reading.html && node_modules/.bin/promptfoo eval -c promptfooconfig.writing-question.yaml -o .promptfoo-results/writing-question.json -o .promptfoo-results/writing-question.html && node_modules/.bin/promptfoo eval -c promptfooconfig.writing-eval.yaml -o .promptfoo-results/writing-eval.json -o .promptfoo-results/writing-eval.html",
     "eval:view": "promptfoo view"
   },
   "devDependencies": {
