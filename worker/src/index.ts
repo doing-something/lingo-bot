@@ -7,6 +7,10 @@ import {
   MAX_HTML_SIZE,
   MAX_TEXT_LEN,
   SYSTEM_PROMPT,
+  WRITING_QUESTION_SYSTEM_PROMPT,
+  WRITING_QUESTION_USER_PROMPT,
+  WRITING_EVAL_SYSTEM_PROMPT,
+  WRITING_EVAL_USER_PROMPT,
   feedbackKeyboard,
   nextQuestionKeyboard,
 } from "./constants.js";
@@ -455,17 +459,8 @@ async function fetchArticle(url: string): Promise<{ text: string; truncated: boo
 }
 
 async function generateWritingQuestion(apiKey: string, context: string, type: WritingQuestionType): Promise<string> {
-  const systemPrompt = "당신은 한국인 영어 학습자를 위한 영작 문제 출제 튜터입니다. 한국어로 명확하고 간결하게 작성하세요.";
-  const prompt = `아래 학습 맥락을 기반으로 ${type} 중심의 영작 문제 1개를 출제하세요.
-
-요구사항:
-- 출력은 반드시 순수 텍스트
-- 문제 문장(한국어) 1개
-- 학습 힌트 1줄
-- 정답 예시는 포함하지 말 것
-
-[학습 맥락]
-${context}`;
+  const systemPrompt = WRITING_QUESTION_SYSTEM_PROMPT;
+  const prompt = renderPromptTemplate(WRITING_QUESTION_USER_PROMPT, { type, context });
 
   const result = await callGemini(
     apiKey,
@@ -482,24 +477,13 @@ async function evaluateWritingAnswer(
   question: string,
   userAnswer: string
 ): Promise<string> {
-  const systemPrompt = "당신은 한국인 영어 학습자의 영작 답안을 평가하는 튜터입니다. 정중하고 구체적으로 피드백하세요.";
-  const prompt = `아래 정보를 바탕으로 답안을 평가하세요.
-
-출력 형식:
-1) 평가 요약(좋은 점/개선점)
-2) 수정 제안(필요 시)
-3) 모범 답안 1개
-4) 핵심 포인트 1줄
-
-유형: ${type}
-문제:
-${question}
-
-학습 맥락:
-${context}
-
-학습자 답안:
-${userAnswer}`;
+  const systemPrompt = WRITING_EVAL_SYSTEM_PROMPT;
+  const prompt = renderPromptTemplate(WRITING_EVAL_USER_PROMPT, {
+    type,
+    question,
+    context,
+    user_answer: userAnswer,
+  });
 
   const result = await callGemini(
     apiKey,
@@ -511,6 +495,10 @@ ${userAnswer}`;
 
 function formatWritingQuestion(type: WritingQuestionType, question: string): string {
   return `[자동 영작 연습]\n유형: ${type}\n\n${question}\n\n답안을 영어로 보내주세요.`;
+}
+
+function renderPromptTemplate(template: string, vars: Record<string, string>): string {
+  return template.replace(/\{\{(\w+)\}\}/g, (_, key: string) => vars[key] ?? "");
 }
 
 async function sendStudyGuideMessages(

@@ -1,6 +1,16 @@
 import SYSTEM_PROMPT from "../prompts/system-prompt.txt";
+import WRITING_QUESTION_SYSTEM_PROMPT from "../prompts/writing-question-system-prompt.txt";
+import WRITING_QUESTION_USER_PROMPT from "../prompts/writing-question-user-prompt.txt";
+import WRITING_EVAL_SYSTEM_PROMPT from "../prompts/writing-eval-system-prompt.txt";
+import WRITING_EVAL_USER_PROMPT from "../prompts/writing-eval-user-prompt.txt";
 
-export { SYSTEM_PROMPT };
+export {
+  SYSTEM_PROMPT,
+  WRITING_QUESTION_SYSTEM_PROMPT,
+  WRITING_QUESTION_USER_PROMPT,
+  WRITING_EVAL_SYSTEM_PROMPT,
+  WRITING_EVAL_USER_PROMPT,
+};
 
 export const MAX_TURNS = 20;
 export const HISTORY_TTL = 60 * 60 * 24 * 7; // 7일
