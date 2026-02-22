@@ -212,7 +212,11 @@ export default {
     if (wasTruncated) {
       await sendTelegram(env.TELEGRAM_TOKEN, chatId, "(텍스트가 길어 앞부분만 분석합니다)");
     }
-    await sendTelegram(env.TELEGRAM_TOKEN, chatId, geminiResult.text, feedbackKeyboard(traceId));
+    if (isSourceInput) {
+      await sendStudyGuideMessages(env.TELEGRAM_TOKEN, chatId, geminiResult.text, feedbackKeyboard(traceId));
+    } else {
+      await sendTelegram(env.TELEGRAM_TOKEN, chatId, geminiResult.text, feedbackKeyboard(traceId));
+    }
 
     if (isSourceInput) {
       const startIndex = randomQuestionIndex();
@@ -507,6 +511,67 @@ ${userAnswer}`;
 
 function formatWritingQuestion(type: WritingQuestionType, question: string): string {
   return `[자동 영작 연습]\n유형: ${type}\n\n${question}\n\n답안을 영어로 보내주세요.`;
+}
+
+async function sendStudyGuideMessages(
+  token: string,
+  chatId: string,
+  text: string,
+  replyMarkup?: ReplyMarkup
+): Promise<void> {
+  const units = splitStudyGuideIntoMessages(text, TELEGRAM_SAFE_LEN);
+  const lastIndex = units.length - 1;
+  for (let i = 0; i < units.length; i += 1) {
+    await sendTelegram(token, chatId, units[i], i === lastIndex ? replyMarkup : undefined);
+  }
+}
+
+export function splitStudyGuideIntoMessages(text: unknown, maxLen: number): string[] {
+  const normalized = String(text ?? "").replace(/\r\n/g, "\n").trim();
+  if (!normalized) {
+    return [""];
+  }
+
+  const lines = normalized
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+
+  const chunks: string[] = [];
+  for (const line of lines) {
+    const sentences = splitLineIntoSentences(line);
+    for (const sentence of sentences) {
+      if (sentence.length <= maxLen) {
+        chunks.push(sentence);
+      } else {
+        chunks.push(...splitTelegramMessage(sentence, maxLen));
+      }
+    }
+  }
+
+  return chunks.length > 0 ? chunks : [normalized];
+}
+
+function splitLineIntoSentences(line: string): string[] {
+  const compact = line.trim();
+  if (!compact) return [];
+  if (isStandaloneFormatLine(compact)) return [compact];
+
+  const parts = compact
+    .split(/(?<=[.!?。？！])\s+/u)
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0);
+
+  return parts.length > 0 ? parts : [compact];
+}
+
+function isStandaloneFormatLine(line: string): boolean {
+  return (
+    /^[━\-_=]{3,}$/.test(line) ||
+    /^\[[^\]]+\]$/.test(line) ||
+    /^\d+\)$/.test(line) ||
+    /:$/.test(line)
+  );
 }
 
 async function answerCallbackQuery(token: string, callbackQueryId: string, text: string): Promise<void> {
